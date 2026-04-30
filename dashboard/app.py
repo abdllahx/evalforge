@@ -42,7 +42,7 @@ if run_id is None:
 tabs = st.tabs(
     [
         "Clusters",
-        "Coverage & growth",
+        "Coverage",
         "Eval dataset",
         "Review queue",
         "Eval runs",
@@ -73,7 +73,7 @@ with tabs[0]:
         )
         st.altair_chart(chart, use_container_width=True)
 
-# ─────────────────────── Coverage & growth ───────────────────────
+# ─────────────────────── Coverage ───────────────────────
 with tabs[1]:
     st.subheader("Coverage heatmap")
     st.caption("How well-covered each (cluster × difficulty) cell is in the eval dataset.")
@@ -109,23 +109,6 @@ with tabs[1]:
     st.caption("Clusters with the most logs but the least eval-dataset representation.")
     gaps = data.coverage_gaps()
     st.dataframe(gaps, use_container_width=True, hide_index=True)
-
-    st.subheader("Dataset growth over time")
-    growth = data.growth_over_time()
-    if len(growth):
-        if "cumulative" not in growth.columns:
-            growth["cumulative"] = growth["added"].cumsum()
-        chart = (
-            alt.Chart(growth)
-            .mark_area(line=True, opacity=0.4)
-            .encode(
-                x=alt.X("bucket:T", title="Time"),
-                y=alt.Y("cumulative:Q", title="Cumulative test cases"),
-                tooltip=["bucket", "added", "cumulative"],
-            )
-            .properties(height=280)
-        )
-        st.altair_chart(chart, use_container_width=True)
 
     st.subheader("Freshness")
     cf1, cf2, cf3 = st.columns(3)

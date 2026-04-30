@@ -44,7 +44,7 @@ The whole pipeline ran end-to-end on a Claude Code Max subscription via a single
 
 | | |
 |---|---|
-| **Coverage heatmap + growth chart** | ![](docs/images/02-coverage-growth.png) |
+| **Coverage heatmap + freshness** | ![](docs/images/02-coverage.png) |
 | **3-candidate eval, pass-rate bars** | ![](docs/images/03-eval-runs.png) |
 | **Regression diff (score deltas)** | ![](docs/images/04-regression-diff.png) |
 | **Review queue with approve/reject** | ![](docs/images/05-review-queue.png) |
@@ -60,7 +60,7 @@ The whole pipeline ran end-to-end on a Claude Code Max subscription via a single
 | Data source | `allenai/WildChat-4.8M` (non-toxic, public) — real ChatGPT prod traffic |
 | Embeddings | `sentence-transformers/all-MiniLM-L6-v2` |
 | Clustering | UMAP (cosine, 8d) → HDBSCAN |
-| Dashboard | Streamlit + Altair (7 tabs incl. coverage heatmap, growth chart, regression diff) |
+| Dashboard | Streamlit + Altair (7 tabs incl. coverage heatmap, freshness gauge, regression diff) |
 | Scheduler | APScheduler in `scheduler` container (opt-in via docker-compose profile) |
 
 ## Quick start
@@ -119,7 +119,7 @@ src/evalforge/
   pipeline.py             # phase-by-phase orchestration
 
 dashboard/                # Streamlit app:
-                          #   Clusters · Coverage&growth · Eval dataset · Review queue
+                          #   Clusters · Coverage · Eval dataset · Review queue
                           #   · Eval runs · Regression diff · Claude usage
 sql/001_schema.sql        # Postgres tables
 fixtures/snapshot.sqlite  # Postgres snapshot for fixture-mode dashboard
