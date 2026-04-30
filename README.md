@@ -44,7 +44,7 @@ The whole pipeline ran end-to-end on a Claude Code Max subscription via a single
 
 | | |
 |---|---|
-| **Coverage heatmap + freshness** | ![](docs/images/02-coverage.png) |
+| **Coverage (heatmap + freshness)** | ![](docs/images/02a-coverage-heatmap.png) <br/> ![](docs/images/02b-freshness.png) |
 | **Eval runs (table + pass-rate)** | ![](docs/images/03a-eval-runs-table.png) <br/> ![](docs/images/03b-eval-passrate.png) |
 | **Regression diff (selectors + score deltas)** | ![](docs/images/04a-regression-selectors.png) <br/> ![](docs/images/04b-regression-deltas.png) |
 | **Review queue (expanded row + similar cases)** | ![](docs/images/05a-review-buttons.png) <br/> ![](docs/images/05b-review-similar.png) |
