@@ -16,9 +16,9 @@ import altair as alt
 import data
 import streamlit as st
 
-st.set_page_config(page_title="evalforge", page_icon="🧪", layout="wide")
+st.set_page_config(page_title="evalforge", layout="wide")
 
-st.title("🧪 evalforge")
+st.title("evalforge")
 st.caption(
     "Auto-curated eval dataset, mined from production LLM logs. "
     "A self-growing test set that catches regressions and rewards scaling improvements."
