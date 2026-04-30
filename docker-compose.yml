@@ -1,0 +1,55 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: evalforge_postgres
+    environment:
+      POSTGRES_USER: evalforge
+      POSTGRES_PASSWORD: evalforge
+      POSTGRES_DB: evalforge
+    ports:
+      - "5433:5432"
+    volumes:
+      - evalforge_pgdata:/var/lib/postgresql/data
+      - ./sql:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evalforge -d evalforge"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  scheduler:
+    build: .
+    container_name: evalforge_scheduler
+    profiles: ["scheduler"]   # not started by default; opt-in with `--profile scheduler`
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://evalforge:evalforge@postgres:5432/evalforge
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      EVALFORGE_CRON: ${EVALFORGE_CRON:-0 3 * * *}
+      EVALFORGE_TZ: ${EVALFORGE_TZ:-UTC}
+      EVALFORGE_PIPELINE_ARGS: ${EVALFORGE_PIPELINE_ARGS:-}
+      EVALFORGE_CACHE_DIR: /cache
+      HF_TOKEN: ${HF_TOKEN:-}
+    volumes:
+      - evalforge_cache:/cache
+    restart: unless-stopped
+
+  dashboard:
+    build: .
+    container_name: evalforge_dashboard
+    profiles: ["dashboard"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://evalforge:evalforge@postgres:5432/evalforge
+    command: ["streamlit", "run", "dashboard/app.py", "--server.headless=true", "--server.port=8501"]
+    ports:
+      - "8501:8501"
+    restart: unless-stopped
+
+volumes:
+  evalforge_pgdata:
+  evalforge_cache:
