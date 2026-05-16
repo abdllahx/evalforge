@@ -1,10 +1,10 @@
 # evalforge
 
-> Mine real production LLM logs, auto-label them, and grow an eval dataset that catches both regressions AND scaling improvements.
+> Pull real production LLM logs, auto label them, and build an eval dataset that catches regressions and scaling improvements.
 
 ![Dashboard overview](docs/images/01-overview-clusters.png)
 
-The hard part of LLM evaluation isn't writing the harness — it's curating the dataset. Hand-built golden sets go stale. **evalforge** treats production traffic as the source of truth: it samples real interactions, clusters them into behavioral categories, generates golden answers and assertions with an LLM, dedups against existing test cases, and runs the resulting eval against any candidate model — flagging regressions on every run.
+The hard part of LLM evaluation isn't writing the harness; it's curating the dataset. Handbuilt golden sets go stale. **evalforge** uses production traffic instead: it samples real interactions, clusters them by behavior, generates golden answers and assertions with an LLM, dedups against existing test cases, and runs the eval against any candidate model, flagging regressions each time.
 
 ## What it does (numbers from the latest run)
 
@@ -38,14 +38,14 @@ The hard part of LLM evaluation isn't writing the harness — it's curating the 
                   regressed-prompt: 28% pass    ← regression detected
 ```
 
-The whole pipeline ran end-to-end on a Claude Code Max subscription via a single `claude -p` subprocess wrapper with disk caching. Re-runs are free.
+The whole pipeline ran end to end on a Claude Code Max subscription via a single `claude -p` subprocess wrapper with disk caching. Re-runs are free.
 
 ## Dashboard tour
 
 | | |
 |---|---|
 | **Coverage (heatmap + freshness)** | ![](docs/images/02a-coverage-heatmap.png) <br/> ![](docs/images/02b-freshness.png) |
-| **Eval runs (table + pass-rate)** | ![](docs/images/03a-eval-runs-table.png) <br/> ![](docs/images/03b-eval-passrate.png) |
+| **Eval runs (table + pass rate)** | ![](docs/images/03a-eval-runs-table.png) <br/> ![](docs/images/03b-eval-passrate.png) |
 | **Regression diff (selectors + score deltas)** | ![](docs/images/04a-regression-selectors.png) <br/> ![](docs/images/04b-regression-deltas.png) |
 | **Review queue (expanded row + similar cases)** | ![](docs/images/05a-review-buttons.png) <br/> ![](docs/images/05b-review-similar.png) |
 
@@ -56,8 +56,8 @@ The whole pipeline ran end-to-end on a Claude Code Max subscription via a single
 | Language | Python 3.12 (managed via `uv`) |
 | Live store | Postgres 16 (Docker, port 5433) |
 | Demo store | SQLite snapshot in `fixtures/snapshot.sqlite` for Streamlit Cloud |
-| LLM | Claude Code Max — Haiku for high-volume calls, Sonnet for quality work |
-| Data source | `allenai/WildChat-4.8M` (non-toxic, public) — real ChatGPT prod traffic |
+| LLM | Claude Code Max (Haiku for high volume calls, Sonnet for quality work) |
+| Data source | `allenai/WildChat-4.8M` (non-toxic, public), real ChatGPT prod traffic |
 | Embeddings | `sentence-transformers/all-MiniLM-L6-v2` |
 | Clustering | UMAP (cosine, 8d) → HDBSCAN |
 | Dashboard | Streamlit + Altair (7 tabs incl. coverage heatmap, freshness gauge, regression diff) |
@@ -88,7 +88,7 @@ uv run streamlit run dashboard/app.py
 uv run pytest -q
 ```
 
-The full pipeline costs ~220 cached Claude calls end-to-end (Haiku-heavy mix). Disk caching at `cache/*.json` makes every re-run free.
+The full pipeline costs ~220 cached Claude calls end to end (Haiku-heavy mix). Disk caching at `cache/*.json` makes every re-run free.
 
 ## Architecture
 
@@ -129,24 +129,24 @@ Dockerfile                # used by docker-compose `scheduler` and `dashboard` p
 docker-compose.yml        # postgres + scheduler (cron'd nightly pipeline) + dashboard
 ```
 
-## Cost-conscious design
+## Cost conscious design
 
 - **One chokepoint for every LLM call** (`src/evalforge/claude_call.py`): sha256 cache key over `(model, system, prompt, schema)`. After one full run, every subsequent run is a cache hit.
-- **Haiku for hot paths** (judging, cluster naming, eval scoring, multi-pass voting); **Sonnet only for quality-sensitive generation** (golden answers).
-- **Concurrency capped at 2** by default (`EVALFORGE_MAX_CONCURRENCY`) so parallel callers don't burn through the rate-limit window.
-- **Pattern checks vs LLM judge are separated**: `must_not_contain` is a hard guardrail (catches leaks/hallucinations); the LLM judge is the authoritative content scorer (catches regressions).
+- **Haiku for hot paths** (judging, cluster naming, eval scoring, multi pass voting); **Sonnet only for quality sensitive generation** (golden answers).
+- **Concurrency capped at 2** by default (`EVALFORGE_MAX_CONCURRENCY`) so parallel callers don't exhaust the rate limit window.
+- **Pattern checks and LLM judge run separately**: `must_not_contain` is a hard guardrail for leaks and hallucinations; the LLM judge handles content scoring and regression detection.
 
 ## Streamlit Cloud demo (fixture mode)
 
-The dashboard auto-detects fixture mode: with `EVALFORGE_FIXTURE_MODE=1` (or no `DATABASE_URL` and a present `fixtures/snapshot.sqlite`), it reads from the committed SQLite snapshot. To deploy:
+The dashboard auto-detects fixture mode. With `EVALFORGE_FIXTURE_MODE=1` (or no `DATABASE_URL` and a present `fixtures/snapshot.sqlite`), it reads from the committed SQLite snapshot. To deploy:
 
 1. Push the repo to GitHub (with `fixtures/snapshot.sqlite` committed).
 2. On share.streamlit.io: point at `dashboard/app.py`, dependency file `dashboard/requirements.txt`, env var `EVALFORGE_FIXTURE_MODE=1`.
-3. Done — reviewers can poke at the data without running the pipeline.
+3. Reviewers can browse the data without running the pipeline.
 
 ## Honesty / limitations
 
-- WildChat-4.8M is real prod traffic from ChatGPT, but timestamps are synthesized for the demo because the dataset's per-row dates aren't always populated. Adapters are domain-agnostic: swap to your own log shape with one new file in `ingestion/`.
-- "Candidate models" in the eval are real model + system-prompt combinations (Haiku-helpful, Sonnet-helpful, Haiku-broken-prompt) — designed to surface both regressions and scaling improvements. The harness is generic and would run against any HTTP endpoint with a small adapter swap.
-- `must_contain` assertions auto-generated by Sonnet are sometimes rubric-style sentences; the scorer treats those as soft, with the LLM judge as the authoritative pass/fail signal.
-- Inter-annotator agreement requires multiple human reviewers — the dashboard shows confidence from auto-voting agreement instead.
+- WildChat-4.8M is real prod traffic from ChatGPT, but we synthesize timestamps for the demo because the dataset's per-row dates aren't always populated. Adapters are domain agnostic: swap to your own log shape with one new file in `ingestion/`.
+- "Candidate models" in the eval are real model + system prompt combinations (Haiku-helpful, Sonnet-helpful, Haiku-broken-prompt), picked to surface both regressions and scaling improvements. The harness is generic and runs against any HTTP endpoint with a small adapter swap.
+- `must_contain` assertions auto generated by Sonnet are sometimes rubric style sentences; the scorer treats those as soft, with the LLM judge as the authoritative pass/fail signal.
+- The dashboard shows confidence from auto voting agreement instead of inter-annotator agreement, since that requires multiple human reviewers.
